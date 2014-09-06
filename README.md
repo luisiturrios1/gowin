@@ -9,7 +9,7 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 ```
 
 
-###Exaple Read windows registry key 
+###Example Read windows registry key 
 ```
 	val, err := gowin.GetRegKey("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common AppData")
 	if err != nil {
