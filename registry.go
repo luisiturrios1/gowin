@@ -20,6 +20,34 @@ import (
 // HKCU = HKEY_CURRENT_USER 
 // HKU = HKEY_USERS
 func GetRegKey(hkey, path, name string)(val string, err error){
+	var handle syscall.Handle
+	switch hkey{
+		case "HKLM":			
+			err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
+		case "HKCC":
+			err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
+		case "HKCR":
+			err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
+		case "HKCI":
+			err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
+		case "HKU":
+			err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
+		default:
+			err = errors.New("Unknown HKEY: " + hkey)
+			return
+	}
+	if err != nil {
+		return
+	}
+	defer syscall.RegCloseKey(handle)
+	var typ uint32
+	var buffer [256]uint16
+	n := uint32(len(buffer))
+	err = syscall.RegQueryValueEx(handle, syscall.StringToUTF16Ptr(name), nil, &typ, (*byte)(unsafe.Pointer(&buffer[0])), &n)
+	if err != nil {
+		return
+	}
+	val = syscall.UTF16ToString(buffer[:])
 	return
 }
 
