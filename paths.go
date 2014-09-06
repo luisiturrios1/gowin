@@ -18,33 +18,59 @@ type ShellFolders struct {
 	Context bool 
 }
 
-//TODO : make code for it
+// Return string with ProgramFiles path 
 // Its don't use the Context value
-func(s *ShellFolders)programFiles()(val string){
+func(s *ShellFolders)ProgramFiles()(val string){
+	val, _ = GetRegKey("HKLM", `SOFTWARE\Microsoft\Windows\CurrentVersion`, "ProgramFilesDir")
 	return
 }
 
-//TODO : make code for it
-func(s *ShellFolders)appData()(val string){
+// Return string with AppData path, its use the Context defined in the ShellFolders struct
+func(s *ShellFolders)AppData()(val string){
+	if s.Context {
+		val, _ = GetRegKey("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common AppData")
+		return
+	}
+	val, _ = GetRegKey("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "AppData")
 	return
 }
 
-//TODO : make code for it
-func(s *ShellFolders)desktop()(val string){
+// Return string with Desktop path, its use the Context defined in the ShellFolders struct
+func(s *ShellFolders)Desktop()(val string){
+	if s.Context {
+		val, _ = GetRegKey("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common Desktop")
+		return
+	}
+	val, _ = GetRegKey("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "Desktop")
 	return
 }
 
-//TODO : make code for it
-func(s *ShellFolders)documents()(val string){
+// Return string with Documents path, its use the Context defined in the ShellFolders struct
+func(s *ShellFolders)Documents()(val string){
+	if s.Context {
+		val, _ = GetRegKey("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common Documents")
+		return
+	}
+	val, _ = GetRegKey("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "Personal")
 	return
 }
 
-//TODO : make code for it
-func(s *ShellFolders)startMenu()(val string){
+// Return string with StarMenu root path, its use the Context defined in the ShellFolders struct
+func(s *ShellFolders)StartMenu()(val string){
+	if s.Context {
+		val, _ = GetRegKey("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common Start Menu")
+		return
+	}
+	val, _ = GetRegKey("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "Start Menu")
 	return
 }
 
-//TODO : make code for it
-func(s *ShellFolders)startMenuPrograms()(val string){
+// Return string with StarMenu programs path, its use the Context defined in the ShellFolders struct
+func(s *ShellFolders)StartMenuPrograms()(val string){
+	if s.Context {
+		val, _ = GetRegKey("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common Programs")
+		return
+	}
+	val, _ = GetRegKey("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "Programs")
 	return
 }
