@@ -6,15 +6,17 @@
 package gowin 
 
 import (
-
+	"os"
 )
 
-//TODO : make code for it
-func GetEnvVar(name string)(val string, err error){
+// Use to read value from windows environment variables by name
+func GetEnvVar(name string)(val string){
+	val = os.Getenv(name)
 	return
 }
 
 //TODO : make code for it
 func WriteEnvVar(name, val string)(err error){
+	// err = os.Setenv(name, val)
 	return
 }
