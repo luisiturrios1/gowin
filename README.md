@@ -5,17 +5,47 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 
 ###How to use it
 ```
+	go get github.com/luisiturrios/gowin
+```
+    Import in you project
+```
 	import "github.com/luisiturrios/gowin"
 ```
 
 
-###Example Read windows registry key 
+###Example write, read, remove windows registry key
 ```
+    //	Write string on the registry require admin privileges
+	err = gowin.WriteStringReg("HKLM",`Software\iturrios\gowin`,"value","Hello world")
+	if err != nil {
+		log.Println(err)
+	}else{
+		fmt.Println("Key inserted")
+	}
+
+	//	write uint32 on the registry require admin privileges
+	err = gowin.WriteDwordReg("HKLM",`Software\iturrios\gowin`,"value2", 4294967295)
+	if err != nil {
+		log.Println(err)
+	}else{
+		fmt.Println("Key inserted")
+	}
+
 	val, err := gowin.GetRegKey("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common AppData")
 	if err != nil {
 		log.Println(err)
 	}
 	fmt.Printf(val)
+
+    // remove key
+	err = gowin.DeleteKey("HKLM",`Software\iturrios`,"gowin")
+	if err != nil {
+		log.Println(err)
+	}else{
+		fmt.Println("Key Removed")
+	}
+
+
 ```
 ###Example Read windows ShellFolders
 ```
@@ -33,7 +63,33 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 	//Read Current user AppData
 	folders.Context = gowin.USER
 	fmt.Println(folders.AppData())
+
+	// functions
+	folders.ProgramFiles()
+	folders.AppData()
+	folders.Desktop()
+	folders.Documents()
+	folders.StartMenu()
+	folders.StartMenuPrograms()
 ```
+
+###Example Read windows environment variables
+```
+    // Get environment var
+	goroot := gowin.GetEnvVar("GOROOT")
+	fmt.Printf("GORROT: %s\n", goroot)
+
+	// Write env var
+	err := gowin.WriteEnvVar("TVAR","hello word")
+	if err != nil {
+		log.Println(err)
+	}else{
+		//Get environment var
+		tvar := gowin.GetEnvVar("TVAR")
+		fmt.Printf("TVAR: %s\n", tvar)
+	}
+```
+
 
 ###Donation
 
