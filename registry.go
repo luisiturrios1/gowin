@@ -1,4 +1,4 @@
-// gowin - The windows OS interface 
+// Provide simple Windows OS interface to manipulate windows registry, environment variables, default paths and windows services from Golang lenguaje
 //
 // Copyright 2014-2020 Luis Iturrios. All rights reserved.
 // Use of this source code is governed by a GPL-LICENCE
@@ -14,12 +14,7 @@ import (
 )
 
 // TODO: Solve error in query DWORD registry
-// Use to read value from windows registry the HKEY in the next definition
-// HKLM = HKEY_LOCAL_MACHINE
-// HKCC = HKEY_CURRENT_CONFIG 
-// HKCR = HKEY_CLASSES_ROOT 
-// HKCU = HKEY_CURRENT_USER 
-// HKU = HKEY_USERS
+// Use to read value from windows registry the HKEY in the next definition HHLM, HKCU, HKCC, HKCR, HKU
 func GetReg(hkey, path, name string)(val string, err error){
 	var handle syscall.Handle
 	switch hkey{
@@ -52,12 +47,7 @@ func GetReg(hkey, path, name string)(val string, err error){
 	return
 }
 
-// Use to write string value to windows registry the HKEY in the next definition
-// HKLM = HKEY_LOCAL_MACHINE
-// HKCC = HKEY_CURRENT_CONFIG 
-// HKCR = HKEY_CLASSES_ROOT 
-// HKCU = HKEY_CURRENT_USER 
-// HKCU = HKEY_USERS HKU
+// Use to write string value to windows registry the HKEY in the next definition HHLM, HKCU, HKCC, HKCR, HKU
 func WriteStringReg(hkey, path, name, val string)(err error){
 	var handle syscall.Handle
 	switch hkey{
@@ -89,12 +79,7 @@ func WriteStringReg(hkey, path, name, val string)(err error){
 	return
 }
 
-// Use to write uint32 value to windows registry the HKEY in the next definition
-// HKLM = HKEY_LOCAL_MACHINE
-// HKCC = HKEY_CURRENT_CONFIG
-// HKCR = HKEY_CLASSES_ROOT
-// HKCU = HKEY_CURRENT_USER
-// HKCU = HKEY_USERS HKU
+// Use to write uint32 value to windows registry the HKEY in the next definition HHLM, HKCU, HKCC, HKCR, HKU
 func WriteDwordReg(hkey, path, name string, val uint32)(err error){
 	var handle syscall.Handle
 	switch hkey{
@@ -125,12 +110,7 @@ func WriteDwordReg(hkey, path, name string, val uint32)(err error){
 	return
 }
 
-// Use to remove key from windows registry the HKEY in the next definition
-// HKLM = HKEY_LOCAL_MACHINE
-// HKCC = HKEY_CURRENT_CONFIG
-// HKCR = HKEY_CLASSES_ROOT
-// HKCU = HKEY_CURRENT_USER
-// HKCU = HKEY_USERS HKU
+// Use to remove key from windows registry the HKEY in the next definition HHLM, HKCU, HKCC, HKCR, HKU
 func DeleteKey(hkey, path, name string)(err error){
 	var handle syscall.Handle
 	switch hkey{
