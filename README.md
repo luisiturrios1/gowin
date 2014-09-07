@@ -7,7 +7,7 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 ```
 	go get github.com/luisiturrios/gowin
 ```
-    Import in you project
+
 ```
 	import "github.com/luisiturrios/gowin"
 ```
@@ -22,7 +22,8 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 	}else{
 		fmt.Println("Key inserted")
 	}
-
+```
+```
 	//	write uint32 on the registry require admin privileges
 	err = gowin.WriteDwordReg("HKLM",`Software\iturrios\gowin`,"value2", 4294967295)
 	if err != nil {
@@ -30,13 +31,16 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 	}else{
 		fmt.Println("Key inserted")
 	}
-
-	val, err := gowin.GetRegKey("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common AppData")
+```
+```
+	//get reg
+	val, err := gowin.GetReg("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common AppData")
 	if err != nil {
 		log.Println(err)
 	}
 	fmt.Printf(val)
-
+```
+```
     // remove key
 	err = gowin.DeleteKey("HKLM",`Software\iturrios`,"gowin")
 	if err != nil {
@@ -50,7 +54,7 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 ###Example Read windows ShellFolders
 ```
 	folders := gowin.ShellFolders{gowin.ALL}
-	//Or default context is USER
+	//	Or 
 	folder := new(gowin.ShellFolders)
 
 	//Read ProgramFiles
@@ -74,19 +78,17 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 ```
 
 ###Example Read windows environment variables
+
 ```
     // Get environment var
 	goroot := gowin.GetEnvVar("GOROOT")
 	fmt.Printf("GORROT: %s\n", goroot)
-
-	// Write env var
+```
+```
+	// Write environment var
 	err := gowin.WriteEnvVar("TVAR","hello word")
 	if err != nil {
 		log.Println(err)
-	}else{
-		//Get environment var
-		tvar := gowin.GetEnvVar("TVAR")
-		fmt.Printf("TVAR: %s\n", tvar)
 	}
 ```
 
