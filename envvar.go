@@ -15,8 +15,8 @@ func GetEnvVar(name string)(val string){
 	return
 }
 
-//TODO : make code for it
+// Use to write value on windows environment variable by name
 func WriteEnvVar(name, val string)(err error){
-	// err = os.Setenv(name, val)
+	err = os.Setenv(name, val)
 	return
 }
