@@ -8,17 +8,17 @@ Instalación de postfix con relay a mandrill
 3) Dentro de esta sección dar clic al botón “View DKIM/SPF setup instructions”
 4) Crear los registros de tipo TXT en el administrador de DNS del proveedor de servicios 
 	
-	Registro SPF 
+Registro SPF 
 	```	
 		Crear registro TXT en blanco con valor especificado por mandrill 
 	```
 
-	Registro DKIM
+Registro DKIM
 	```	 
 		Crear registro TXT con este nombre mandrill._domainkey con valor especificado por Mandril  
 	```
 
-	Dar clic en verificar DNS
+Dar clic en verificar DNS
 
 ###Preparar servidor Linux (CentOS 6 64bits)
 
@@ -83,7 +83,7 @@ Instalación de postfix con relay a mandrill
 	```
 
 	#####Enviar correo de prueba
-	
+
 	```
 		$ sendmail destino@dominio.com
 		From: nombre@tudominio.com
