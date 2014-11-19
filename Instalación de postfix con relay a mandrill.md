@@ -9,85 +9,85 @@ Instalación de postfix con relay a mandrill
 4) Crear los registros de tipo TXT en el administrador de DNS del proveedor de servicios 
 	
 Registro SPF 
-	```	
-		Crear registro TXT en blanco con valor especificado por mandrill 
-	```
+```	
+	Crear registro TXT en blanco con valor especificado por mandrill 
+```
 
 Registro DKIM
-	```	 
-		Crear registro TXT con este nombre mandrill._domainkey con valor especificado por Mandril  
-	```
+```	 
+	Crear registro TXT con este nombre mandrill._domainkey con valor especificado por Mandril  
+```
 
 Dar clic en verificar DNS
 
 ###Preparar servidor Linux (CentOS 6 64bits)
 
-	#####Actualizar
+#####Actualizar
 
-	```
-		yum update
-	```
+```
+	yum update
+```
 
-	#####Desinstalar sendmail 
+#####Desinstalar sendmail 
 
-	```
-		yum remove sendmail
-	```
+```
+	yum remove sendmail
+```
 
-	#####Instalar postfix y cyrus
+#####Instalar postfix y cyrus
 
-	```
-		yum install postfix
-	```
+```
+	yum install postfix
+```
 
-	```
-		yum install cyrus-sasl-plain
-	```
+```
+	yum install cyrus-sasl-plain
+```
 
-	#####Definir postfix como auto arranque
+#####Definir postfix como auto arranque
 
-	```
-		chkconfig postfix on
-	```
+```
+	chkconfig postfix on
+```
 
-	#####Crear fichero con credenciales /etc/postfix/sasl_passwd con siguiente contenido 
+#####Crear fichero con credenciales /etc/postfix/sasl_passwd con siguiente contenido 
 
-	```
-		[smtp.mandrillapp.com] NombreUsuarioMandrill:API_KEY
-	```
+```
+	[smtp.mandrillapp.com] NombreUsuarioMandrill:API_KEY
+```
 
-	```
-		chmod 600 /etc/postfix/sasl_passwd
-	```
+```
+	chmod 600 /etc/postfix/sasl_passwd
+```
 
-	#####Mapear fichero con credenciales
+#####Mapear fichero con credenciales
 
-	```
-		postmap /etc/postfix/sasl_passwd
-	```	
+```
+	postmap /etc/postfix/sasl_passwd
+```	
 
-	#####Agregar siguientes líneas al fichero /etc/postfix/main.cf
+#####Agregar siguientes líneas al fichero /etc/postfix/main.cf
 
-	```
-		smtp_sasl_auth_enable = yes
-		smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd 
-		smtp_sasl_security_options = noanonymous
-		smtp_use_tls = yes 
-		relayhost = [smtp.mandrillapp.com]
-	```
+```
+	smtp_sasl_auth_enable = yes
+	smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd 
+	smtp_sasl_security_options = noanonymous
+	smtp_use_tls = yes 
+	relayhost = [smtp.mandrillapp.com]
+```
 
-	#####Iniciar postfix
+#####Iniciar postfix
 
-	```
-		service postfix start
-	```
+```
+	service postfix start
+```
 
-	#####Enviar correo de prueba
+#####Enviar correo de prueba
 
-	```
-		$ sendmail destino@dominio.com
-		From: nombre@tudominio.com
-		Subject: xxxxxxxx
-		cuerpo del mensaje
-		.
-	```
+```
+	$ sendmail destino@dominio.com
+	From: nombre@tudominio.com
+	Subject: xxxxxxxx
+	cuerpo del mensaje
+	.
+```
