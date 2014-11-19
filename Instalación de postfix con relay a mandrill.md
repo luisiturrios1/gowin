@@ -3,10 +3,10 @@ Instalación de postfix con relay a mandrill
 
 ###Crear cuenta en mandrill app 
 
-1) Dirigirse a la sección “settings” -> Domains 
-2) Dentro de esta sección agregar el un dominio de salida
-3) Dentro de esta sección dar clic al botón “View DKIM/SPF setup instructions”
-4) Crear los registros de tipo TXT en el administrador de DNS del proveedor de servicios 
+#####1) Dirigirse a la sección “settings” -> Domains 
+#####2) Dentro de esta sección agregar el un dominio de salida
+#####3) Dentro de esta sección dar clic al botón “View DKIM/SPF setup instructions”
+#####4) Crear los registros de tipo TXT en el administrador de DNS del proveedor de servicios 
 	
 Registro SPF 
 ```	
