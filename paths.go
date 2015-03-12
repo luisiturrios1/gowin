@@ -1,8 +1,3 @@
-// gowin - The windows OS interface 
-//
-// Copyright 2014-2020 Luis Iturrios. All rights reserved.
-// Use of this source code is governed by a GPL-LICENCE
-// license that can be found in the LICENSE file.
 package gowin
 
 import (
