@@ -5,7 +5,7 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/btcsuite/winsvc"
+	"github.com/btcsuite/winsvc/winapi"
 )
 
 // TODO: Solve error in query DWORD registry
