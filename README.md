@@ -53,7 +53,7 @@ Provide a simple Windows OS interface to manipulate Windows registry, environmen
 ```
 ### Example reading windows ShellFolders
 ```
-	folders := gowin.ShellFolders{gowin.ALL}
+	folders := gowin.ShellFolders{Context: gowin.ALL}
 	//	Or 
 	folder := new(gowin.ShellFolders)
 
