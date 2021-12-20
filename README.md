@@ -1,9 +1,9 @@
 gowin
 =====
 
-Provide simple Windows OS interface to manipulate windows registry, environment variables, default paths and windows services from Golang lenguaje
+Provide a simple Windows OS interface to manipulate Windows registry, environment variables, default paths and Windows services with Golang. 
 
-###How to use it
+### How to use it
 ```
 	go get github.com/luisiturrios/gowin
 ```
@@ -13,7 +13,7 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 ```
 
 
-###Example write, read, remove windows registry key
+### Example write, read & removing windows registry keys
 ```
     //	Write string on the registry require admin privileges
 	err = gowin.WriteStringReg("HKLM",`Software\iturrios\gowin`,"value","Hello world")
@@ -51,7 +51,7 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 
 
 ```
-###Example Read windows ShellFolders
+### Example reading windows ShellFolders
 ```
 	folders := gowin.ShellFolders{gowin.ALL}
 	//	Or 
@@ -77,7 +77,7 @@ Provide simple Windows OS interface to manipulate windows registry, environment 
 	folders.StartMenuPrograms()
 ```
 
-###Example Read windows environment variables
+### Example reading windows environment variables
 
 ```
     // Get environment var
