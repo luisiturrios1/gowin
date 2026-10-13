@@ -1,19 +1,13 @@
-// Provide simple Windows OS interface to manipulate windows registry, environment variables, default paths and windows services from Golang lenguaje
-//
-package gowin 
+// Modified 2026-10-12: modernized documentation and implementation.
 
-import (
-	"os"
-)
+package gowin
 
-// Use to read value from windows environment variables by name
-func GetEnvVar(name string)(val string){
-	val = os.Getenv(name)
-	return
-}
+import "os"
 
-// Use to write value on windows environment variable by name
-func WriteEnvVar(name, val string)(err error){
-	err = os.Setenv(name, val)
-	return
-}
+// GetEnvVar returns a process environment variable, or an empty string if unset.
+// It works on every platform supported by Go.
+func GetEnvVar(name string) string { return os.Getenv(name) }
+
+// WriteEnvVar changes a process environment variable. It does not persist the
+// variable to the Windows registry or update other running processes.
+func WriteEnvVar(name, val string) error { return os.Setenv(name, val) }

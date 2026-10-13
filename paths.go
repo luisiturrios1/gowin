@@ -1,71 +1,79 @@
+// Modified 2026-10-12: shared folder lookup and additive error-returning API.
+
 package gowin
 
-import (
-
-)
+import "fmt"
 
 const (
-	ALL=true//Use for make ShellFolders.Context
-	USER=false//Use for make ShellFolders.Context
+	// ALL selects shell folders shared by all users.
+	ALL = true
+	// USER selects the current user's shell folders.
+	USER = false
 )
 
+// ShellFolders reads the same registry locations as legacy Gowin. Its zero value
+// selects the current user. Do not modify Context concurrently with a lookup.
 type ShellFolders struct {
-	Context bool 
+	Context bool
 }
 
-// Return string with ProgramFiles path 
-// Its don't use the Context value
-func(s *ShellFolders)ProgramFiles()(val string){
-	val, _ = GetReg("HKLM", `SOFTWARE\Microsoft\Windows\CurrentVersion`, "ProgramFilesDir")
-	return
-}
-
-// Return string with AppData path, its use the Context defined in the ShellFolders struct
-func(s *ShellFolders)AppData()(val string){
-	if s.Context {
-		val, _ = GetReg("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common AppData")
-		return
+// Lookup returns a folder's registry path and any read error. Supported names
+// are ProgramFiles, AppData, Desktop, Documents, StartMenu and StartMenuPrograms.
+// REG_EXPAND_SZ values retain their environment-variable placeholders.
+func (s *ShellFolders) Lookup(name string) (string, error) {
+	context := USER
+	if name != "ProgramFiles" {
+		context = s.Context
 	}
-	val, _ = GetReg("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "AppData")
-	return
+	hkey, path, value, err := shellFolderRegistry(context, name)
+	if err != nil {
+		return "", err
+	}
+	return GetReg(hkey, path, value)
 }
 
-// Return string with Desktop path, its use the Context defined in the ShellFolders struct
-func(s *ShellFolders)Desktop()(val string){
-	if s.Context {
-		val, _ = GetReg("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common Desktop")
-		return
+func shellFolderRegistry(context bool, name string) (hkey, path, value string, err error) {
+	if name == "ProgramFiles" {
+		return "HKLM", `SOFTWARE\Microsoft\Windows\CurrentVersion`, "ProgramFilesDir", nil
 	}
-	val, _ = GetReg("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "Desktop")
-	return
+	var common string
+	switch name {
+	case "AppData":
+		value, common = "AppData", "Common AppData"
+	case "Desktop":
+		value, common = "Desktop", "Common Desktop"
+	case "Documents":
+		value, common = "Personal", "Common Documents"
+	case "StartMenu":
+		value, common = "Start Menu", "Common Start Menu"
+	case "StartMenuPrograms":
+		value, common = "Programs", "Common Programs"
+	default:
+		return "", "", "", fmt.Errorf("unknown shell folder: %q", name)
+	}
+	if context == ALL {
+		return "HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, common, nil
+	}
+	return "HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, value, nil
 }
 
-// Return string with Documents path, its use the Context defined in the ShellFolders struct
-func(s *ShellFolders)Documents()(val string){
-	if s.Context {
-		val, _ = GetReg("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common Documents")
-		return
-	}
-	val, _ = GetReg("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "Personal")
-	return
-}
+// ProgramFiles returns the ProgramFiles path, ignoring Context and read errors.
+func (s *ShellFolders) ProgramFiles() string { val, _ := s.Lookup("ProgramFiles"); return val }
 
-// Return string with StarMenu root path, its use the Context defined in the ShellFolders struct
-func(s *ShellFolders)StartMenu()(val string){
-	if s.Context {
-		val, _ = GetReg("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common Start Menu")
-		return
-	}
-	val, _ = GetReg("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "Start Menu")
-	return
-}
+// AppData returns the selected AppData path, ignoring read errors.
+func (s *ShellFolders) AppData() string { val, _ := s.Lookup("AppData"); return val }
 
-// Return string with StarMenu programs path, its use the Context defined in the ShellFolders struct
-func(s *ShellFolders)StartMenuPrograms()(val string){
-	if s.Context {
-		val, _ = GetReg("HKLM", `Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`, "Common Programs")
-		return
-	}
-	val, _ = GetReg("HKCU", `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`, "Programs")
-	return
+// Desktop returns the selected Desktop path, ignoring read errors.
+func (s *ShellFolders) Desktop() string { val, _ := s.Lookup("Desktop"); return val }
+
+// Documents returns the selected Documents path, ignoring read errors.
+func (s *ShellFolders) Documents() string { val, _ := s.Lookup("Documents"); return val }
+
+// StartMenu returns the selected Start Menu path, ignoring read errors.
+func (s *ShellFolders) StartMenu() string { val, _ := s.Lookup("StartMenu"); return val }
+
+// StartMenuPrograms returns the selected Programs path, ignoring read errors.
+func (s *ShellFolders) StartMenuPrograms() string {
+	val, _ := s.Lookup("StartMenuPrograms")
+	return val
 }

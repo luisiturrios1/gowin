@@ -1,151 +1,80 @@
+// Modified 2026-10-12: safe registry decoding and shared validation.
+
 package gowin
 
 import (
+	"encoding/binary"
 	"errors"
+	"fmt"
+	"strings"
 	"syscall"
-	"unsafe"
-
-	"github.com/btcsuite/winsvc/winapi"
+	"unicode/utf16"
 )
 
-// TODO: Solve error in query DWORD registry
-// Use to read value from windows registry the HKEY in the next definition HKLM, HKCU, HKCC, HKCR, HKU
-func GetRegRaw(hkey, path, name string) (val []uint16, err error) {
-	var handle syscall.Handle
+// ErrUnsupportedPlatform indicates a Windows-only operation on another OS.
+var ErrUnsupportedPlatform = errors.New("gowin: operation requires Windows")
+
+func validateRegistryInput(hkey, path, name string) error {
 	switch hkey {
-	case "HKLM":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	case "HKCC":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_CONFIG, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	case "HKCR":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CLASSES_ROOT, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	case "HKCU":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_USER, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	case "HKU":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_USERS, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
+	case "HKLM", "HKCU", "HKCC", "HKCR", "HKU":
 	default:
-		err = errors.New("Unknown HKEY: " + hkey)
-		return
+		return fmt.Errorf("unknown HKEY: %q", hkey)
 	}
+	if strings.ContainsRune(path, 0) || strings.ContainsRune(name, 0) {
+		return fmt.Errorf("registry path or name contains NUL: %w", syscall.EINVAL)
+	}
+	return nil
+}
+
+// GetReg reads a registry value using the legacy UTF-16 interpretation. It does
+// not expand environment variables in REG_EXPAND_SZ. Use GetDwordReg for DWORDs.
+func GetReg(hkey, path, name string) (string, error) {
+	value, err := GetRegRaw(hkey, path, name)
 	if err != nil {
-		return
+		return "", err
 	}
-	defer syscall.RegCloseKey(handle)
-	var typ uint32
-	var buffer [syscall.MAX_LONG_PATH]uint16
-	n := uint32(len(buffer))
-	err = syscall.RegQueryValueEx(handle, syscall.StringToUTF16Ptr(name), nil, &typ, (*byte)(unsafe.Pointer(&buffer[0])), &n)
-	if err != nil {
-		return
-	}
-	var lastNonNull uint64
-	lastNonNull = 0
-	length := uint64(len(buffer))
-	for i := uint64(0); i < length; i++ {
-		if buffer[i] != 0x00 {
-			lastNonNull = (i + 1)
+	for i, unit := range value {
+		if unit == 0 {
+			value = value[:i]
+			break
 		}
 	}
-	if lastNonNull >= length {
-		lastNonNull = (length - 1)
-	}
-	val = buffer[:lastNonNull]
-	return
+	return string(utf16.Decode(value)), nil
 }
 
-func GetReg(hkey, path, name string) (val string, err error) {
-	buffer, err := GetRegRaw(hkey, path, name)
-	if err == nil {
-		val = syscall.UTF16ToString(buffer[:])
+// legacyUTF16 retains embedded NULs and removes trailing zero units, as the
+// original GetRegRaw did. An odd final byte is padded with zero.
+func legacyUTF16(data []byte) []uint16 {
+	value := make([]uint16, len(data)/2+len(data)%2)
+	for i := 0; i < len(data)/2; i++ {
+		value[i] = binary.LittleEndian.Uint16(data[2*i:])
 	}
-	return
+	if len(data)%2 != 0 {
+		value[len(value)-1] = uint16(data[len(data)-1])
+	}
+	end := len(value)
+	for end > 0 && value[end-1] == 0 {
+		end--
+	}
+	return value[:end]
 }
 
-// Use to write string value to windows registry the HKEY in the next definition HHLM, HKCU, HKCC, HKCR, HKU
-func WriteStringReg(hkey, path, name, val string) (err error) {
-	var handle syscall.Handle
-	switch hkey {
-	case "HKLM":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	case "HKCC":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_CONFIG, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	case "HKCR":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CLASSES_ROOT, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	case "HKCU":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_USER, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	case "HKU":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_USERS, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	default:
-		err = errors.New("Unknown HKEY: " + hkey)
-		return
+// readRegistryValue tolerates growth between queries. Bound retries so another
+// process continuously modifying the value cannot keep a call alive.
+func readRegistryValue(query func([]byte) (int, uint32, error), moreData error) ([]byte, error) {
+	buffer := make([]byte, 64)
+	for range 8 {
+		n, _, err := query(buffer)
+		if err == nil {
+			if n < 0 || n > len(buffer) {
+				return nil, fmt.Errorf("invalid registry value size: %d", n)
+			}
+			return buffer[:n], nil
+		}
+		if !errors.Is(err, moreData) || n <= len(buffer) {
+			return nil, err
+		}
+		buffer = make([]byte, n)
 	}
-	if err != nil {
-		return
-	}
-	defer syscall.RegCloseKey(handle)
-	var d uint32
-	err = winapi.RegCreateKeyEx(handle, syscall.StringToUTF16Ptr(path), 0, nil, winapi.REG_OPTION_NON_VOLATILE, syscall.KEY_ALL_ACCESS, nil, &handle, &d)
-	if err != nil {
-		return
-	}
-	buf := syscall.StringToUTF16(val)
-	err = winapi.RegSetValueEx(handle, syscall.StringToUTF16Ptr(name), 0, syscall.REG_SZ, (*byte)(unsafe.Pointer(&buf[0])), uint32(len(buf)*2))
-	return
-}
-
-// Use to write uint32 value to windows registry the HKEY in the next definition HHLM, HKCU, HKCC, HKCR, HKU
-func WriteDwordReg(hkey, path, name string, val uint32) (err error) {
-	var handle syscall.Handle
-	switch hkey {
-	case "HKLM":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	case "HKCC":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_CONFIG, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	case "HKCR":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CLASSES_ROOT, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	case "HKCU":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_USER, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	case "HKU":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_USERS, syscall.StringToUTF16Ptr(""), 0, syscall.KEY_CREATE_SUB_KEY, &handle)
-	default:
-		err = errors.New("Unknown HKEY: " + hkey)
-		return
-	}
-	if err != nil {
-		return
-	}
-	defer syscall.RegCloseKey(handle)
-	var d uint32
-	err = winapi.RegCreateKeyEx(handle, syscall.StringToUTF16Ptr(path), 0, nil, winapi.REG_OPTION_NON_VOLATILE, syscall.KEY_ALL_ACCESS, nil, &handle, &d)
-	if err != nil {
-		return
-	}
-	err = winapi.RegSetValueEx(handle, syscall.StringToUTF16Ptr(name), 0, syscall.REG_DWORD, (*byte)(unsafe.Pointer(&val)), uint32(unsafe.Sizeof(val)))
-	return
-}
-
-// Use to remove key from windows registry the HKEY in the next definition HHLM, HKCU, HKCC, HKCR, HKU
-func DeleteKey(hkey, path, name string) (err error) {
-	var handle syscall.Handle
-	switch hkey {
-	case "HKLM":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_LOCAL_MACHINE, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	case "HKCC":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_CONFIG, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	case "HKCR":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CLASSES_ROOT, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	case "HKCU":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_CURRENT_USER, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	case "HKU":
-		err = syscall.RegOpenKeyEx(syscall.HKEY_USERS, syscall.StringToUTF16Ptr(path), 0, syscall.KEY_READ, &handle)
-	default:
-		err = errors.New("Unknown HKEY: " + hkey)
-		return
-	}
-	if err != nil {
-		return
-	}
-	defer syscall.RegCloseKey(handle)
-	err = winapi.RegDeleteKey(handle, syscall.StringToUTF16Ptr(name))
-	return
+	return nil, fmt.Errorf("registry value kept growing: %w", moreData)
 }
